@@ -7,6 +7,8 @@
  *    
  *
  *****************************************************************/
+#define _GNU_SOURCE
+#include <sched.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -70,6 +72,8 @@ void * Thread_1_code(void *arg)
 	tp.tv_sec = PERIOD_S;	
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	ts = TsAdd(ts,tp);	
+
+	//printf("\n%d\n\n", gettid());
 	
 	/* Periodic jobs ...*/ 
 	while(1) {
@@ -99,7 +103,7 @@ void * Thread_1_code(void *arg)
 		    }
 		    if (tit.tv_nsec > max_iat) {
 		      max_iat = tit.tv_nsec;
-		      update = 0;
+		      update = 1;
 		    }
 		}
 		ta_ant = ta; // Update ta_ant
@@ -126,28 +130,45 @@ int main(int argc, char *argv[])
 {
 	int err;
 	pthread_t threadid;
-	char procname[40]; 
+	char procname[40];
+	int priority;
 	
 
 	/* Process input args */
-	if(argc != 2) {
-	  printf("Usage: %s PROCNAME, where PROCNAME is a string\n\r", argv[0]);
+	if(argc != 3) {
+	  printf("Usage: %s PROCNAME PRIORITY, where PROCNAME is a string\n\r", argv[0]);
 	  return -1; 
 	}
 	
 	strcpy(procname, argv[1]);
 
-	// struct sched_param parm;
-	// pthread_attr_t attr;
-	// pthread_attr_init(&attr);
-	// pthread_attr_setinheritsched(&attr,
-	// PTHREAD_EXPLICIT_SCHED);
-	// pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
-	// parm.sched_priority = 42;
-	// pthread_attr_setschedparam(&attr, &parm);
+	// priority = 42;			// A1
+	priority = atoi(argv[2]);	// A2
+	struct sched_param parm;
+	pthread_attr_t attr;
+	pthread_attr_init(&attr);
+	pthread_attr_setinheritsched(&attr,
+	PTHREAD_EXPLICIT_SCHED);
+	pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+	parm.sched_priority = priority;
+	pthread_attr_setschedparam(&attr, &parm);
+
+
+	// A3
+	cpu_set_t cpuset;
+
+	/* Forces the process to execute only on CPU0 */
+	CPU_ZERO(&cpuset);
+	CPU_SET(0, &cpuset);
+
+	if(sched_setaffinity(0, sizeof(cpuset), &cpuset)) {
+		printf("\n Lock of process to CPU0 failed!!!");
+		return(1);
+	}
 	
 	/* Create periodic thread/task */
-	err = pthread_create(&threadid, NULL, Thread_1_code, &procname);
+	//err = pthread_create(&threadid, NULL, Thread_1_code, &procname);
+	err = pthread_create(&threadid, &attr, Thread_1_code, &procname);	// A1, A2, A3
  	
 	if (err != 0) {
 		printf("\n\r Error creating Thread [%s]", strerror(err));
