@@ -39,10 +39,10 @@ struct taskArgsStruct
 #define TASK_A_PRIO 5 // RT priority [0..99]
 #define TASK_A_PERIOD_NS MS_2_NS(1000)
 
-#define TASK_B_PRIO 10 // RT priority [0..99]
+#define TASK_B_PRIO 20 // RT priority [0..99]
 #define TASK_B_PERIOD_NS MS_2_NS(2000)
 
-#define TASK_C_PRIO 20 // RT priority [0..99]
+#define TASK_C_PRIO 10 // RT priority [0..99]
 #define TASK_C_PERIOD_NS MS_2_NS(1000)
 
 #define BOOT_ITER 10 // Number of activations for warm-up
